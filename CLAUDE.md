@@ -140,7 +140,9 @@ Developer Mode; Samsung's home screen stays. Two ways:
 
 1. **Ask** for the TV's IP address and their city, if they didn't say.
 2. **On the TV** (they do it): *Apps* → type `1 2 3 4 5` on the remote → *Developer mode* on, *Host PC IP* = this
-   computer's IP → restart the TV.
+   computer's IP → restart the TV. Newer TVs (a 2026 UE55M70H, Tizen, tested) ignore the code on the Apps screen
+   itself: it opens from Apps' own *App Settings* (or *Settings*), typed with the remote's 123 pad, SmartThings'
+   number pad or a USB keyboard. The TV's `http://<IP>:8001/api/v2/` says `developerMode` 1 once it's on.
 3. **Tools:** Samsung's `tizen` command to sign (Tizen Studio's CLI, or Samsung's Claude Code plugin
    `tizen-sdk-skills` from github.com/Samsung/tizen-agent-skills, which installs it and makes Samsung certificates),
    and `python3 tizen/install.py` to install, which speaks SDB itself. `tizen` runs on Java; Samsung's `sdb`, its new

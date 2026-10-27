@@ -524,7 +524,8 @@ var TV = (function () {
 
     /**
      * One Home Assistant REST call; done(error, body text). On LG through the app's service (Home Assistant refuses
-     * the page's origin); elsewhere straight from the page, which needs the origin in HA's cors_allowed_origins.
+     * the page's origin); on Samsung straight from the page, which config.xml's <access origin="*"> lets through
+     * (a 2026 Tizen 10 TV, with no change to HA); in a browser it needs the origin in HA's cors_allowed_origins.
      */
     homeAssistant: function (url, token, method, path, body, done) {
       if (webos) {
