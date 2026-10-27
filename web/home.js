@@ -567,7 +567,19 @@
 
   // MARK: - Drawer
 
-  var drawerItems = [], drawerInputs = 0;
+  var drawerItems = [], drawerInputs = 0, drawerHa = 0;
+
+  /** OK on a Home Assistant entity: its new state at once, and the real one once HA answers. */
+  function haPresser(id) {
+    return function () {
+      HA.press(id, function (ok) {
+        if (!ok) toast(tr("Couldn't reach Home Assistant."));
+        HA.refresh(renderDrawer);
+        renderDrawer();
+      });
+      renderDrawer();
+    };
+  }
 
   function renderDrawer() {
     var d = $('drawer');
@@ -581,19 +593,27 @@
     drawerItems.push({label: tr('All Apps'), symbol: 'apps', run: openApps});
     drawerItems.push({label: tr('Home Settings'), symbol: 'settings', run: openSettings});
     if (TV.canOpenSettings) drawerItems.push({label: tr('TV Settings'), symbol: 'tv_settings', run: tvSettings});
-    var n = drawerItems.length, gap = 18, groupGap = 56, groups = drawerInputs > 0 && drawerInputs < n ? 2 : 1;
+    drawerHa = drawerItems.length;
+    HA.items().forEach(function (h) {
+      // A sensor shows its value and has nothing to press; anything else is lit while on.
+      drawerItems.push({label: h.label, symbol: h.symbol, value: h.value, on: h.on, off: h.value === null && !h.on,
+        run: h.value === null ? haPresser(h.id) : function () {}});
+    });
+    var n = drawerItems.length, gap = 18, groupGap = 56;
+    var groups = Math.max(1, (drawerInputs > 0 ? 1 : 0) + (drawerHa > drawerInputs ? 1 : 0) + (drawerHa < n ? 1 : 0));
     var tw = Math.min(230, (1760 - Math.max(0, n - groups) * gap - (groups - 1) * groupGap) / Math.max(1, n));
     var xPos = 80;
     for (var k = 0; k < n; k++) {
-      if (k === drawerInputs && k > 0) {
+      if ((k === drawerInputs || k === drawerHa) && k > 0) {
         xPos += groupGap - gap;
-        el('div', 'row-title', d, tr('Shortcuts')).style.left = (xPos + 4) + 'px';
+        el('div', 'row-title', d, k === drawerHa ? tr('Home Assistant') : tr('Shortcuts')).style.left = (xPos + 4) + 'px';
       }
       if (k === 0 && drawerInputs) el('div', 'row-title', d, tr('Inputs')).style.left = '84px';
-      var item = drawerItems[k], key = el('div', 'key glass' + (item.off ? ' off' : ''), d);
+      var item = drawerItems[k], key = el('div', 'key glass' + (item.off ? ' off' : '') + (item.on ? ' on' : ''), d);
       key.style.left = xPos + 'px';
       key.style.width = tw + 'px';
-      sym(item.symbol, key);
+      if (item.value != null) el('div', 'value', key, item.value);
+      else sym(item.symbol, key);
       el('div', 'label', key, item.label);
       hover(key, Z.DRAWER, k);
       xPos += tw + gap;
@@ -676,6 +696,7 @@
     st.zone = Z.DRAWER;
     st.drawer = Math.min(drawerItems.length - 1, nearest(document.querySelectorAll('#drawer .key'), centerX(tiles[st.shelf])));
     updateFocus();
+    HA.refresh(renderDrawer);
   }
 
   function closeDrawer() {
@@ -758,6 +779,10 @@
         rows.push({label: names[i], toggle: Prefs.quotes() && Prefs.coin(i), dim: !Prefs.quotes(),
           step: function () { if (Prefs.quotes()) { Prefs.setCoin(i, !Prefs.coin(i)); Data.settingsChanged(); } }});
       })(i);
+    }
+    if (HA.configured()) {
+      rows.push({label: tr('Home Assistant'), toggle: Prefs.homeAssistant(),
+        step: function () { Prefs.set('homeAssistant', !Prefs.homeAssistant()); renderDrawer(); }});
     }
     rows.push({label: tr('TMDB key'), value: Prefs.tmdbKey().length >= 4 ? '•••• ' + Prefs.tmdbKey().slice(-4) : tr('Not set'), opens: true, tmdb: true,
       step: function (d) { if (d >= 0) openKey(); }});

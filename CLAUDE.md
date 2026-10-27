@@ -110,7 +110,9 @@ stays, and Free My TV opens with a long press of a number key.
    (webostv.developer.lge.com) → *Dev Mode Status* on (the TV restarts) → *Key Server* on. It shows the IP and a
    passphrase.
 3. **Settings:** the same `config.properties` as on Android (the first `python3 webos/build.py` creates it). The
-   TMDB key rules above apply.
+   TMDB key rules above apply. Home Assistant in the drawer (`web/ha.js`): `ha_url` (the address the TV reaches),
+   `ha_entities`, and `ha_token`, theirs and secret like the TMDB key. The page's calls go through the app's service
+   (`webos/service`, `ha`): Home Assistant refuses the page's file:// origin.
 4. **Build:** `python3 webos/build.py` must end with `Built FreeMyTV-webos.ipk`.
 5. **Install:** the first time needs the TV's passphrase, typed by them: ask them to run
    `python3 webos/install.py <IP>` in their own terminal (yours can't answer its prompt, and the passphrase doesn't go

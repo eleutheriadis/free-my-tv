@@ -15,7 +15,7 @@ import translate  # noqa: E402  (the catalogues and the keys the web app uses)
 
 GENERIC = {'tmdbKey': '', 'tmdbRegion': '', 'latitude': '', 'longitude': '', 'city': '', 'language': 'auto',
            'currency': '', 'temperature': 'auto', 'theme': 'auto', 'showCrypto': True, 'hideAnimation': False, 'hideApps': [],
-           'shelfApps': [], 'drawerFirst': False}
+           'shelfApps': [], 'drawerFirst': False, 'haUrl': '', 'haToken': '', 'haEntities': []}
 
 
 def config_from_args(args):
@@ -66,6 +66,10 @@ def read_config(path):
         'hideApps': [s.strip() for s in values.get('hide_apps', '').split(',') if s.strip()],
         'shelfApps': [s.strip() for s in values.get('shelf_apps', '').split(',') if s.strip()],
         'drawerFirst': values.get('drawer_first', 'false').lower() == 'true',
+        'haUrl': values.get('ha_url', '').rstrip('/'),
+        'haToken': values.get('ha_token', ''),
+        'haEntities': [{'id': i.strip(), 'name': n.strip()} for i, _, n in
+                       (s.partition('=') for s in values.get('ha_entities', '').split(',')) if '.' in i],
     }
 
 

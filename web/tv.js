@@ -522,6 +522,31 @@ var TV = (function () {
       else this.launch('com.palm.app.settings', null, done);
     },
 
+    /**
+     * One Home Assistant REST call; done(error, body text). On LG through the app's service (Home Assistant refuses
+     * the page's origin); elsewhere straight from the page, which needs the origin in HA's cors_allowed_origins.
+     */
+    homeAssistant: function (url, token, method, path, body, done) {
+      if (webos) {
+        luna('luna://' + self + '.service/ha', {url: url, token: token, method: method, path: path, body: body}, function (res) {
+          if (res && typeof res.body === 'string') done(null, res.body); else done(new Error('no answer'));
+        });
+        return;
+      }
+      var x = new XMLHttpRequest(), over = false;
+      x.open(method, url + path, true);
+      x.timeout = 8000;
+      x.setRequestHeader('Authorization', 'Bearer ' + token);
+      if (body) x.setRequestHeader('Content-Type', 'application/json');
+      x.onreadystatechange = function () {
+        if (x.readyState !== 4 || over) return;
+        over = true;
+        if (x.status >= 200 && x.status < 300) done(null, x.responseText); else done(new Error('HTTP ' + x.status));
+      };
+      x.ontimeout = x.onerror = function () { if (!over) { over = true; done(new Error('no connection')); } };
+      x.send(body ? JSON.stringify(body) : null);
+    },
+
     /** The TV's model, firmware, system, IP address and this app's version, for About this TV. */
     about: about,
 

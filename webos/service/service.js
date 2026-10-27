@@ -91,6 +91,47 @@ function call(uri, clientKey, done) {
   socket.on('close', function () { finish(null); });
 }
 
+/*
+ * Home Assistant's REST API for the page (web/ha.js): Home Assistant only answers cross-origin requests from origins
+ * set in its configuration, and the page's file:// origin isn't one; from here there is no origin.
+ * Only /api/states and /api/services, with the page's token: nothing else goes through.
+ */
+service.register('ha', function (message) {
+  var p = message.payload || {};
+  var m = /^(https?):\/\/([^\/:]+)(?::(\d+))?$/.exec(p.url || '');
+  var path = String(p.path || '');
+  if (!m || !p.token || (p.method !== 'GET' && p.method !== 'POST') || !/^\/api\/(states(\/[\w.]+)?|services\/\w+\/\w+)$/.test(path)) {
+    message.respond({returnValue: false, errorText: 'Not a Home Assistant call'});
+    return;
+  }
+  var body = p.body ? buffer(JSON.stringify(p.body)) : null;
+  var headers = {Authorization: 'Bearer ' + p.token};
+  if (body) { headers['Content-Type'] = 'application/json'; headers['Content-Length'] = body.length; }
+  var done = false;
+  function answer(result) {
+    if (done) return;
+    done = true;
+    message.respond(result);
+  }
+  var req = require(m[1]).request({method: p.method, hostname: m[2], port: m[3] || (m[1] === 'https' ? 443 : 80),
+      path: path, headers: headers}, function (res) {
+    var chunks = [], size = 0;
+    res.on('data', function (c) {
+      size += c.length;
+      if (size > 16 << 20) { req.abort(); answer({returnValue: false, errorText: 'answer too large'}); return; }
+      chunks.push(c);
+    });
+    res.on('end', function () {
+      if (res.statusCode < 200 || res.statusCode > 299) answer({returnValue: false, errorText: 'HTTP ' + res.statusCode});
+      else answer({returnValue: true, body: Buffer.concat(chunks).toString('utf8')});
+    });
+  });
+  req.setTimeout(8000, function () { req.abort(); answer({returnValue: false, errorText: 'no answer'}); });
+  req.on('error', function (e) { answer({returnValue: false, errorText: e.message}); });
+  if (body) req.write(body);
+  req.end();
+});
+
 service.register('ssap', function (message) {
   var p = message.payload || {};
   // Only the app list, the one call the page makes: nothing else goes to the TV's API, nor gets its client key.
