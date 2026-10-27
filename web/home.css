@@ -68,28 +68,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .drawer-open #sky .lift { opacity: 0.32; }
 .night.drawer-open #sky .lift { opacity: 0.42; }
 
-/* The photo of the day (its theme, without picks): sharp, shaded at the left (the clock), the bottom (the shelf) and
-   the top (the buttons and the caption), like HomeView's scrims; 45% darker at night (Backdrop.NIGHT_DIM). */
-#photo {
-  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-  background-size: cover; background-position: center;
-  opacity: 0; -webkit-transition: opacity 0.8s; transition: opacity 0.8s;
-}
-#photo.on { opacity: 1; }
-#photo .shade {
-  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-  -webkit-transition: background-color 2s; transition: background-color 2s;
-  background:
-    -webkit-linear-gradient(top, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.1) 12%, rgba(0, 0, 0, 0) 24%),
-    -webkit-linear-gradient(bottom, rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.3) 15%, rgba(0, 0, 0, 0.18) 33%, rgba(0, 0, 0, 0.05) 48%, rgba(0, 0, 0, 0) 60%),
-    -webkit-linear-gradient(left, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.52) 17%, rgba(0, 0, 0, 0.26) 37%, rgba(0, 0, 0, 0.07) 54%, rgba(0, 0, 0, 0) 68%);
-  background:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.1) 12%, rgba(0, 0, 0, 0) 24%),
-    linear-gradient(to top, rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.3) 15%, rgba(0, 0, 0, 0.18) 33%, rgba(0, 0, 0, 0.05) 48%, rgba(0, 0, 0, 0) 60%),
-    linear-gradient(to right, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.52) 17%, rgba(0, 0, 0, 0.26) 37%, rgba(0, 0, 0, 0.07) 54%, rgba(0, 0, 0, 0) 68%);
-}
-.dim #photo .shade { background-color: rgba(0, 0, 0, 0.45); }
-
 /* MARK: - Moving parts: the top fades and everything rises when the drawer opens. */
 
 /* Each part is its own stack, so a focused tile (z-index) never shows over the drawer, a sheet or the screensaver. */
@@ -217,7 +195,15 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .night .round.focus { background: #FFF; color: #1D1D1F; }
 .night .round.focus .tip { color: #F5F5F7; }
 
-/* MARK: - Picks: a wide card and two tall ones; focused, a card grows 5%, rises and its edge lights up. */
+/* MARK: - Picks: the card with focus is wide, the others narrow (posters); it grows 5%, rises and its edge lights up. */
+
+#cards {
+  position: absolute;
+  left: 0;
+  top: 0;
+  -webkit-transition: -webkit-transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
 
 .card {
   position: absolute;
@@ -241,6 +227,21 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   -webkit-transition: box-shadow 0.22s;
   transition: box-shadow 0.22s;
 }
+.card .layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+.card .back {
+  opacity: 0;
+  -webkit-transition: opacity 0.3s;
+  transition: opacity 0.3s;
+}
+.card.wide .back { opacity: 1; }
 .card .img::after {
   content: '';
   position: absolute;
@@ -285,7 +286,12 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   font-size: 25px;
   font-weight: 500;
   color: #6E6E73;
+  opacity: 0;
+  -webkit-transition: opacity 0.3s;
+  transition: opacity 0.3s;
 }
+.card.wide .meta { opacity: 1; }
+.card.edge .name, .card.edge .meta { visibility: hidden; }
 .night .card .img { background-color: #2C2C2E; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32); }
 .night .card .name { color: #F5F5F7; }
 .night .card .meta { color: rgba(245, 245, 247, 0.62); }
@@ -304,19 +310,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 #clock .date { display: block; font-size: 40px; font-weight: 500; letter-spacing: 0; margin-top: 18px; color: #6E6E73; }
 .no-picks #clock { display: block; }
-
-/* The photo of the day's caption (what it shows and whose it is): on the buttons' line, ending before them, as on
-   Android (there it starts at the left; here the title holds the left), on a dark chip: at least 4.6:1 even over a
-   white sky (measured on 15 of Bing's photos). */
-#caption {
-  position: absolute; right: 400px; top: 83px; max-width: 980px; height: 40px; line-height: 40px; padding: 0 16px;
-  border-radius: 20px; background: rgba(0, 0, 0, 0.5);
-  font-size: 22px; font-weight: 500; color: rgba(255, 255, 255, 0.92);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  display: none;
-}
-.photo.no-picks #caption { display: block; }
-.photo #quotes { text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }   /* outside the scrims, over bright skies */
+.no-key #title, .no-key #tabs { visibility: hidden; }
 .night #clock { color: #F5F5F7; }
 .night #clock .date { color: rgba(245, 245, 247, 0.62); }
 
@@ -503,7 +497,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .cell.focus .face { -webkit-transform: scale(1.08); transform: scale(1.08); box-shadow: 0 16px 34px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
 .cell.focus .label { color: #FFF; }
 
-#settings .box, #shelfedit .box, #langpick .box, #about .box {
+#settings .box, #shelfedit .box, #langpick .box, #citypick .box, #keypick .box, #about .box {
   position: absolute;
   left: 560px;
   top: 150px;
@@ -526,8 +520,26 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .box .row .value .sym { width: 26px; height: 26px; vertical-align: -3px; }
 .box .row.dim { color: rgba(255, 255, 255, 0.4); }
 #about .row .value { font-feature-settings: 'tnum'; }
+#citypick .row.field input, #keypick .row.field input {
+  width: 100%;
+  height: 70px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #FFF;
+  font: inherit;
+  line-height: 70px;
+}
+#citypick .row.field, #keypick .row.field { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18); }
+#citypick .row.field input::-webkit-input-placeholder, #keypick .row.field input::-webkit-input-placeholder { color: rgba(255, 255, 255, 0.4); }
+#citypick .row.field input::placeholder, #keypick .row.field input::placeholder { color: rgba(255, 255, 255, 0.4); }
+#citypick .row { overflow: hidden; text-overflow: ellipsis; }
 #about .row .value.cut { overflow: hidden; text-overflow: ellipsis; }
 .box .hint { padding: 14px 18px 0; font-size: 22px; font-weight: 500; color: rgba(255, 255, 255, 0.5); }
+.box .hint.warn { color: #FFC266; }
+.box .hint.steps { white-space: pre-line; line-height: 1.4; }
 .toggle { position: absolute; right: 24px; top: 13px; width: 78px; height: 44px; border-radius: 22px; background: #3A3D45; -webkit-transition: background-color 0.14s; transition: background-color 0.14s; }
 .toggle::after { content: ''; position: absolute; left: 4px; top: 4px; width: 36px; height: 36px; border-radius: 18px; background: #FFF; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); -webkit-transition: -webkit-transform 0.14s; transition: transform 0.14s; }
 .toggle.on { background: #3FD69B; }
@@ -584,5 +596,5 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 /* The Magic Remote's pointer: no text selection, no outlines. */
 * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 
-/* Tizen 2 (see tv.js): no shadows or animations, which its GPU can't keep up with while the focus moves. */
+/* Tizen 2 and 1 GB TVs (see tv.js): no shadows or animations; their GPUs can't keep up while the focus moves. */
 .lite * { box-shadow: none !important; -webkit-transition: none !important; transition: none !important; }

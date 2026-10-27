@@ -15,6 +15,8 @@
     <!-- The sleep timer on time: from Android 12, windows under 10 minutes stretch to 10. No prompt for either. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Updates from GitHub's releases (Updates): Android's installer still asks before each one. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Android 11+: without this list the app can't "see" the other apps (getLeanbackLaunchIntentForPackage
          returns null). The shelf and streaming apps, the live TV apps and, through the <intent>, every TV app
@@ -37,6 +39,13 @@
         <package android:name="com.cbs.ott" />
         <package android:name="com.cbs.ca" />
         <package android:name="com.bskyb.nowtv.beta" />
+        <package android:name="de.swr.avp.ard.tv" />
+        <package android:name="com.zdf.android.mediathek" />
+        <package android:name="tv.arte.plus7" />
+        <package android:name="de.prosiebensat1digital.seventv" />
+        <package android:name="de.rtli.tvnow" />
+        <package android:name="de.sky.online" />
+        <package android:name="de.telekom.magentatv.tv" />
         <package android:name="com.peacocktv.peacockandroid" />
         <package android:name="com.peacock.peacockfiretv" />
         <package android:name="com.globo.globotv" />
@@ -57,6 +66,7 @@
         <package android:name="com.mediatek.tv.oneworld.tvcenter" />
         <!-- HY300 projectors: keystone and Miracast (drawer shortcuts), Allwinner's player for HDMI; MIUI TV's source player -->
         <package android:name="com.htc.htcsettings" />
+        <package android:name="com.softwinner.tcorrection" />
         <package android:name="com.softwinner.miracastReceiver" />
         <package android:name="com.softwinner.awlivetv" />
         <package android:name="com.xiaomi.mitv.tvplayer" />

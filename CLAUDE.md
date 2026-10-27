@@ -47,10 +47,13 @@ before you do it, and let them do the taps on the TV.
    degrees) and `city` for their city, `tmdb_region` (two-letter country), `show_crypto`, `currency` and `temperature` to match.
 4. **The TMDB key is theirs and secret.** Ask them to create one (free: themoviedb.org → Settings → API) and paste it
    after `tmdb_key=` in `config.properties` themselves. Don't ask for it in the chat, never print it, never commit
-   it. If they paste it in the chat anyway, put it only in `config.properties`.
+   it. If they paste it in the chat anyway, put it only in `config.properties`. With the release's APK (no
+   `config.properties`), they add it on the TV themselves: Home Settings > TMDB key (a QR code for their phone, or typed).
    Without a key everything works except the picks and their photos on the screensaver (photos they send themselves
    still show).
    The same goes for the optional `watchmode_key` (free, watchmode.com; makes picks open the title's page): theirs, secret, only in `config.properties`.
+   And for `plex_url` and `plex_token` (Google TV only; their Plex server's newest titles join the picks): the token opens
+   their Plex account, so suggest a Plex Home managed user's (the README says how), and it goes only in `config.properties`.
 5. **Build:** `./build.sh` → `FreeMyTV.apk`. Keep `freemytv.keystore`: updates must be signed with the same key.
 6. **Install:** `adb connect <IP>:5555`. The TV asks *Allow USB debugging?*: tell them to accept and tick *Always
    allow*. Then `adb install -r FreeMyTV.apk`. If it hangs, Google Play Protect is asking on the TV (Android 14:
@@ -60,6 +63,15 @@ before you do it, and let them do the taps on the TV.
    TCL's `TclAppBoot` blocks background jobs by default, so the switch (and the watchdog) never run. The log shows
    `forbid bind service ... ModeJob`. Some TCL firmware has neither (a 2024 MediaTek Google TV, Android 14, has no
    `TclAppBoot`): both names answer `Unknown operation string`, and nothing needs allowing.
+   Some TCL firmware (a "Smart TV Pro", Realtek RTD2880, Android 11, build `RP1A200622.001`; the same TV as #264) also
+   has a second, separate background killer, `TGuard` (`com.tcl.guard`), which kills the app's processes about a second
+   after any other app comes to the front. The switch's benchmark opens the original home screen a few times (that's
+   the launcher flashing by during "Measuring…"), so TGuard can kill `ModeJob` there (log: `TGuardMemoryManagerKillHandler
+   ... tguard-kill`, then `Scheduling restart of crashed service io.freemytv/.ModeJob`). The JobScheduler runs the job
+   again by itself within a minute or two, and a benchmark that fails only logs now (it used to read as "Couldn't turn on
+   Free My TV: Read timed out", #277). Tell them: if the settings screen closes on the stock launcher, wait a minute or two, then press
+   Home; Free My TV opening confirms the switch. No `adb`/`appops` setting turns TGuard off (its content providers aren't
+   exported to the shell user).
    Chromecast with Google TV (Android 14) refuses port 5555 even with USB debugging on: have them turn on *Wireless
    debugging*, pair with `adb pair <address:port> <code>` (the code is on the TV), then run `adb tcpip 5555` over that
    connection. It closes again at every restart (Wireless debugging turns itself off; `persist.adb.tcp.port` is
@@ -73,8 +85,9 @@ before you do it, and let them do the taps on the TV.
 7. **Tell them what the switch does** before they make it: the home screen and screensaver change, a short list of
    promo apps is turned off (never uninstalled), and *Original* brings it all back. On TCL, the remote's Netflix,
    YouTube and Prime buttons keep working through a small accessibility service that only reads those buttons
-   (*Free My TV* → *Remote Buttons* picks what each opens); *Original* turns it off. On Xiaomi TVs whose remote has no
-   Home button, the same service makes its Mi button open Free My TV instead of PatchWall.
+   (*Free My TV* → *Remote Buttons* picks what each opens); *Original* turns it off. On TCL's Android 11 there's no
+   service (the TV moved the volume twice with it), so there the buttons work only on Free My TV's home screen. On
+   Xiaomi TVs whose remote has no Home button, the same service makes its Mi button open Free My TV instead of PatchWall.
 8. **They switch on the TV:** *Free My TV* → *Home Screen* → *Free My TV*. The app uses the TV's own ADB on
    127.0.0.1 with its own key, so the TV asks once more to allow debugging. Don't switch modes from the computer.
    Before they switch, run `adb disconnect <IP>:5555` (connect again for step 9): on Android 8 to 10 the TV can hand
@@ -114,12 +127,13 @@ stays, and Free My TV opens with a long press of a number key.
 
 ## Installing it on a Samsung TV (Tizen)
 
-On Samsung it's an app too (2016 and newer, Tizen 2.4+; TizenBrew needs 2017 and newer), installed through Samsung's
+On Samsung it's an app too (Tizen 2.3+: 2015 and newer, one 2015 TV reported, #317; TizenBrew needs 2017 and newer), installed through Samsung's
 Developer Mode; Samsung's home screen stays. Two ways:
 
 - **The release, no tools:** TizenBrew Installer (github.com/reisxd/TizenBrewInstaller) installs the latest GitHub
   release when they type `simbasjungles/free-my-tv`, and on 2023+ TVs signs it with their Samsung account. That build
-  has no TMDB key (no picks) and takes the city from the TV's time zone. Walk them through the README's steps.
+  has no TMDB key built in (they type theirs in *Home Settings* → *TMDB key*) and takes the city from the TV's time
+  zone. Walk them through the README's steps.
 - **Their own build** (their city, their TMDB key), below.
 
 1. **Ask** for the TV's IP address and their city, if they didn't say.
@@ -136,7 +150,7 @@ Developer Mode; Samsung's home screen stays. Two ways:
    JDK 17's .jdk folder>` (Homebrew: `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk`). That `tizen` signs natively.
 4. **Certificate, once:** 2023+ TVs (Tizen 7+) need a Samsung certificate, made with their Samsung account for this TV
    (its DUID): the plugin's Samsung profile opens the browser for them to sign in, or Tizen Studio's Certificate
-   Manager does it. 2016-2022 TVs take a Tizen certificate (`tizen certificate`, then `tizen security-profiles add`
+   Manager does it. 2015-2022 TVs take a Tizen certificate (`tizen certificate`, then `tizen security-profiles add`
    and `tizen cli-config "profiles.path=<home>/tizen-studio-data/profile/profiles.xml"`; on macOS the passwords go to
    the login Keychain). Certificate passwords are theirs: they type them in their own terminal, never in the chat.
 5. **Settings:** the same `config.properties`; the TMDB key rules above apply.
@@ -144,7 +158,9 @@ Developer Mode; Samsung's home screen stays. Two ways:
    signed with "<profile>")`.
 7. **Install:** `python3 tizen/install.py <IP>`: it pushes the app over SDB (port 26101), installs it with the TV's
    `0 vd_appinstall` and opens it with `0 was_execute` (tested on 2016 Tizen 2.4, 2017 Tizen 3.0, 2019 Tizen 5.0 and
-   2024 Tizen 9.0 TVs; Tizen 2.4 has no `sdk_toolpath`, so it pushes to `/opt/usr/apps/tmp`); it only reports success
+   2024 Tizen 9.0 TVs, and reported on a 2015 Tizen 2.3 one; Tizen 2.x has no `sdk_toolpath`, so it pushes to
+   `/opt/usr/apps/tmp`; on 2015 firmware `developerMode` on port 8001 can read 0 while SDB works, and SDB resets the
+   connection when the TV's Host PC IP isn't this computer's current one); it only reports success
    when the TV says `install completed` (`cmd_ret:0` comes after failures too). `--uninstall` removes
    it; some TVs' sdbd doesn't answer that, and then it's removed on the TV (Apps, Settings, Free My TV, Delete).
    With Samsung's tools instead: `sdb connect <IP>`, `tizen install -n FreeMyTV-tizen.wgt -t <serial from sdb
@@ -170,7 +186,12 @@ TizenBrew Installer takes the first `.wgt` of the latest GitHub release, so ever
 `FreeMyTV-tizen.wgt`: built with `--generic` (no config.properties: no key, the city from the time zone) and signed
 with a Tizen certificate (`--sign`), which 2017-2022 TVs install as it is; on 2023+ TVs the installer signs it again
 with the person's Samsung certificate. Sign every release with the same author certificate: older TVs refuse an
-update signed by another. `python3 webos/build.py --generic` makes the LG `.ipk` that goes along. Then
+update signed by another. `python3 webos/build.py --generic` makes the LG `.ipk` that goes along.
+The release's `FreeMyTV.apk` updates itself (`Updates`: a weekly job, and Home Settings > Updates): it reads
+`releases/latest`, so keep the asset named `FreeMyTV.apk`, sign it with the project's key, and raise `versionName`
+(compared number by number with the tag, `v1.3.0` > `1.2`) and `versionCode` (Android refuses a lower one). Before
+uploading, `apksigner verify --print-certs FreeMyTV.apk` must show the release certificate
+(`b85d4ff69cb42bfb1837ee0279506363954470b16402a4165f2f095886d19204`, `Updates.RELEASE_CERT`): TVs refuse any other. Then
 `python3 tools/homebrew_repo.py <the uploaded FreeMyTV-webos.ipk>` writes `docs/webos/apps.json`, the webOS Homebrew
 Channel repository (https://freemytv.io/webos/apps.json, with that file's SHA-256), and a copy of the `.ipk` beside it:
 commit both with the release. The Channel installs from freemytv.io, not from the GitHub release, because GitHub's
@@ -234,10 +255,24 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
   and `_height`, `ro.config.low_ram`). There every pixel and every MB counts: `Backdrop` builds its images at the UI's
   size (and the picks use TMDB's w1280), and the shelf logos have a copy at the resting size and one at the focused
   size, so both draw pixel for pixel.
+- TMDB's API is reached at `api.tmdb.org`, TMDB's own mirror of `api.themoviedb.org` on the images' domain
+  (`image.tmdb.org`): some ISPs block the other name (Jio in India, #327).
 - `HomeMode` runs every switch as a background job (`ModeJob`) in the main process; the UI is in the `:home`
   process. The sleep timer's overlay (`SleepOverlay`) runs alone in `:sleep`, so its foreground service doesn't keep
   the home screen in memory under the app in front; the remote's key service lives in `:keys` (below).
   `Watchdog` goes back to the stock home screen after 3 crashes in 5 minutes.
+  `Updates` (the release APK updating itself) runs there too: the week's check and Settings' OK are `ModeJob`s, one at
+  a time, and they write `update.json`, which Settings only reads. The download must be this repository's release
+  asset (its size and SHA-256 as GitHub lists them), newer than the app (versionName and versionCode) and signed with
+  the release key (`Updates.RELEASE_CERT`); Android's installer always asks. A build made on a computer (not
+  `--generic`, or another key) checks only when asked and never downloads.
+- The TMDB key given on the TV (`Prefs.tmdbKey`) wins over `Config.TMDB_KEY`; read it through `Recs.key()`. Its screen
+  serves a one-time page (`KeyPage`: the TV's private IPv4 on Wi-Fi or Ethernet, never a VPN's or a public one, a random
+  port and token, one POST, 5 minutes, and only while that screen shows) behind a QR code (`Qr`, byte mode, level M, after
+  Project Nayuki's MIT encoder, whose notice stays in the file), and checks a key with TMDB (`/configuration`) before
+  saving it. Never log it. Nothing may escape KeyPage's threads: `:home`'s watchdog counts it as a home screen crash.
+  On LG and Samsung it's typed in Home Settings (no QR: a web app can't serve a page): `Prefs.tmdbKey()` (localStorage)
+  wins over `CONFIG.tmdbKey`, and `Data.keyChanged()` fetches the picks again.
 - On-screen text: `Ui.tr("English")`, translated from `app/assets/i18n/<lang>.json` (keyed by the English; one
   HashMap lookup, English when a language lacks it). Text built at runtime is a pattern: `Ui.trf("{n} min ago", "n", 12)`,
   never concatenated words. A key `"context|Text"` is the same English where a language may need another word
@@ -253,10 +288,6 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
   are. Run `python3 tools/translate.py --check` to validate all catalogues without writing files.
   No right-to-left languages yet (the layout isn't mirrored); CJK and Devanagari use the system font.
   Comments in English, short, only where the why isn't obvious.
-- The *Photo of the day* theme (`Wallpaper`; `web/data.js` on LG and Samsung): Bing's photo of the day behind the
-  clock, only without picks and while their own photos are off (`Photos.on()`: then no Bing request). Only Bing's
-  own image path on www.bing.com, no redirects, at most 5 MB of JPEG, and days with `wp: false` skipped. Drawn by
-  `HomeView.photoBg`, dimmed at night by `Backdrop.NIGHT_DIM`, let go when the theme changes.
 - Settings come from `config.properties` through the generated `out/gen/io/freemytv/Config.java` (never edit that).
   Built with `--generic`, the place values are empty and `Place` fills them from the TV's time zone
   (`app/assets/zones.json`, written by `tools/make_zones.py` with `web/zones.js`).
@@ -267,6 +298,9 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
   Vestel, KTC (NextStar), Sony, Xiaomi and Hisense TVs and Formovie projectors, the service is on only in Free My TV mode, and *Original* takes it out of the enabled accessibility
   services. The system waits for the service on every key, so it lives alone in the `:keys` process: what it reads is
   in `remote-keys.txt` (`Prefs.keyApp`), never in SharedPreferences, and `onKeyEvent` does no heavy work.
+  The service is also off while every button is *Nothing*, and always on TCL's Android 11 (`RemoteKeys.FILTER_SAFE`):
+  there any key filter makes the TV act on a volume key twice (one press moves 2 steps and a held key gets stuck, #325;
+  turning off only our service fixed it), so the buttons work only where they reach our home screen's window.
   Vestel (F&U and other store brands; MediaTek, Android TV 14 tested) maps its Netflix button to `KEYCODE_STEM_1`, a
   global key (`dumpsys window policy` lists them) that the key filter sees first; its YouTube, Prime Video and Google
   Play buttons stay with the system. The stock lists needed no Vestel entries.
@@ -311,7 +345,8 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
   quick toggles and a revert can't cross), `verifyNow` does the same after a boot or an update, and a screen that finds
   it on but not allowed asks once.
   It unbinds itself as soon as it connects (the permission is all it's for), and the home screen and the screensaver
-  watch the sessions only while they show. The line is cut to fit when the title changes, never while drawing.
+  watch the sessions only while they show. The line is cut to fit when the title changes, never while drawing; the
+  home screen's bars bounce again only for a new title (`Watch.title`), and TalkBack announces it then.
 - HY300 projectors (Hotack, Allwinner H713, Android 11 tested; the build claims to be an `askey`/`adt3`): the stock
   home screen and screensaver are `com.htc.htclauncherhighenglishd08`, which also carries an ad SDK (`com.zeasn.ad`).
   Keystone, zoom and projection mode live in `com.htc.htcsettings` (`action.htcsettings.prjsettings`), and the Miracast
@@ -324,13 +359,17 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
   home: it opens the package in `persist.sys.home.selectpkg`, else the HTC one, and with that off and the property
   empty, a black screen. Their adb shell runs as root, so the switch sets the property (`HomeMode.JM_HOME`) and only
   then turns the HTC home off; Original and the watchdog put both back. Wireless debugging's port changes and turns
-  itself off, but adb also listens on 5555 there.
+  itself off, but adb also listens on 5555 there. They carry `com.htc.htcsettings` too, but any change in its keystone
+  or zoom crashes it (`SecurityException`: SurfaceFlinger doesn't know the Allwinner request code 1050): their own is
+  `com.softwinner.tcorrection/.projection.ProjectionSettingActivity`, which the Keystone shortcut opens where it's
+  installed.
 - Xiaomi's Chinese firmware (MIUI TV; Redmi `MiTV-MFTP0`, Android 9 tested) has no passthrough handler either: its own
   `com.xiaomi.mitv.tvplayer/.ExternalSourceActivity` (action `com.xiaomi.mitv.tvplayer.EXTSRC_PLAY`) opens a port from
   an `input` extra (HDMI 1 to 3 are 23 to 25; there is no number for a fourth), so `inputs` keeps HDMI 1 to 3 there.
 - MediaTek TVs that list one hardware tuner input per mode (Haier H32S80EFX, Google TV 14: `AnalogInputService/HW1`,
-  `CableInputService/HW0`, `TunerInputService/HW0`, in no fixed order): Live TV tunes the digital antenna's
-  (`HomeApps.tunerRank`), then cable's, then analog's.
+  `CableInputService/HW0`, `TunerInputService/HW0`, in no fixed order), or two of one name (a Cecotec on a Vestel base,
+  Android TV 14: `TunerInputService/HW0` antenna, `/HW1` analog, HW1 listed first, #312): Live TV tunes the digital
+  antenna's (`HomeApps.tunerRank`: by name, then the lowest HW number), then cable's, then analog's.
 - TVs with Fire OS built in (Xiaomi Fire TV, MediaTek, Fire OS 8 tested): the passthrough request lands on Vewd's
   HbbTV player (`com.vewd.core.tvapp`) or on Amazon's Live TV, and both play the antenna's last channel (RaiPlay's)
   instead of the port. Amazon's input player wants `com.amazon.tv.permission.TUNE_INPUT` and its home screen's switch
@@ -344,11 +383,14 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
   (webOS 3 and 4, Tizen 3) run a Chromium from 2015 to 2017 (`tools/check.sh` greps for all of these); only transform
   and opacity animate. Tizen 2.4 (2016) runs WebKit 538: no Intl (`fmt` in data.js rounds by hand), SVGs need a width
   and height, and `tv.js` adds a `lite` class there that turns off shadows and transitions, which its GPU can't keep up
-  with; it also can't open the TV's settings (`TV.canOpenSettings`). `web/tv.js` is the
+  with (TVs under 2 GB that draw the page at twice its size get it too, `navigator.deviceMemory` and `devicePixelRatio`: an LG on webOS TV Lite went from 25 to 60 fps); it also
+  can't open the TV's settings (`TV.canOpenSettings`). `web/tv.js` is the
   TV's side: on LG, Luna (`listLaunchPoints`, `launch`, the inputs; where webOS 6 and newer deny `listLaunchPoints`
   to Developer Mode apps, the list comes from the TV's remote control API on `ws://127.0.0.1:3000` once the TV has
-  allowed it (it asks once; a "no" isn't asked again), and until then from `getAppLoadStatus` over a list of known
-  app ids, which shows the logo bundled in `web/icons/` where there is one, otherwise the name on the brand's color);
+  allowed it (it asks once; a "no" isn't asked again; firmware that gives the page its own origin,
+  `file://io.freemytv-webos`, gets 1008 "invalid origin" there, and the call goes through `webos/service`, a JS
+  service in the package whose handshake says `file://`; webOS 22 with 2026 firmware tested), and until then from
+  `getAppLoadStatus` over a list of known app ids, which shows the logo bundled in `web/icons/` where there is one, otherwise the name on the brand's color);
   on Samsung, `tizen.application` (`getAppsInfo`, `launch`), the `VIDEOSOURCE` property and
   `tizen.tvwindow.setSource` for the inputs, then Samsung's viewer (`org.tizen.tv-viewer`) to show them. Samsung's own
   data is unreliable: on Tizen 3 no app's `iconPath` loads (on Tizen 4 and 5, YouTube's and Prime Video's are a
